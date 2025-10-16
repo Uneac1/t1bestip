@@ -45,36 +45,34 @@ class CFIPAutomation:
         return True
     
     def select_cf_official(self):
-        """检查CF官方列表是否已选中"""
+        """选择CF官方列表"""
         if not self.driver:
-            print("本地环境，跳过CF官方列表检查")
+            print("本地环境，跳过CF官方列表选择")
             return True
         
-        print("正在检查CF官方列表选择...")
+        print("正在选择CF官方列表...")
         
         try:
-            # 查找IP库输入框，检查当前值
-            ip_input = self.driver.find_element(By.XPATH, "//input[contains(@placeholder, 'IP库') or contains(@class, 'ip-library')]")
-            current_value = ip_input.get_attribute('value')
+            # 根据实际HTML结构，使用id选择器
+            ip_select = self.driver.find_element(By.ID, "ip-source-select")
             
-            if 'CF官方列表' in current_value:
+            # 检查当前选中的值
+            current_value = ip_select.get_attribute('value')
+            print(f"当前IP库选择: {current_value}")
+            
+            if current_value == 'official':
                 print("CF官方列表已选中")
                 return True
             else:
-                print(f"当前IP库选择: {current_value}")
-                # 如果未选中，尝试点击下拉框选择
-                dropdown_arrow = self.driver.find_element(By.XPATH, "//div[contains(@class, 'dropdown') or contains(@class, 'select')]//button[contains(@class, 'arrow') or contains(@class, 'chevron')]")
-                dropdown_arrow.click()
-                time.sleep(1)
-                
                 # 选择CF官方列表
-                cf_option = self.driver.find_element(By.XPATH, "//option[contains(text(), 'CF官方列表')]")
-                cf_option.click()
+                from selenium.webdriver.support.ui import Select
+                select = Select(ip_select)
+                select.select_by_value('official')
                 print("已选择CF官方列表")
                 return True
                 
         except Exception as e:
-            print(f"CF官方列表检查失败: {e}")
+            print(f"CF官方列表选择失败: {e}")
             return False
     
     def select_port_443(self):
@@ -86,23 +84,21 @@ class CFIPAutomation:
         print("正在选择443端口...")
         
         try:
-            # 查找端口输入框
-            port_input = self.driver.find_element(By.XPATH, "//input[contains(@placeholder, '端口') or contains(@class, 'port')]")
-            current_value = port_input.get_attribute('value')
+            # 根据实际HTML结构，使用id选择器
+            port_select = self.driver.find_element(By.ID, "port-select")
             
-            if '443' in current_value:
+            # 检查当前选中的值
+            current_value = port_select.get_attribute('value')
+            print(f"当前端口选择: {current_value}")
+            
+            if current_value == '443':
                 print("443端口已选中")
                 return True
             else:
-                print(f"当前端口选择: {current_value}")
-                # 点击端口下拉框
-                port_dropdown = self.driver.find_element(By.XPATH, "//div[contains(@class, 'dropdown') or contains(@class, 'select')]//button[contains(@class, 'arrow') or contains(@class, 'chevron')]")
-                port_dropdown.click()
-                time.sleep(1)
-                
                 # 选择443端口
-                port_443 = self.driver.find_element(By.XPATH, "//option[contains(text(), '443')]")
-                port_443.click()
+                from selenium.webdriver.support.ui import Select
+                select = Select(port_select)
+                select.select_by_value('443')
                 print("已选择443端口")
                 return True
                 
@@ -119,8 +115,8 @@ class CFIPAutomation:
         print("正在开始延迟测试...")
         
         try:
-            # 查找开始测试按钮
-            start_button = self.driver.find_element(By.XPATH, "//button[contains(text(), '开始延迟测试')]")
+            # 根据实际HTML结构，使用id选择器
+            start_button = self.driver.find_element(By.ID, "test-btn")
             start_button.click()
             print("延迟测试已开始")
             return True
@@ -231,15 +227,16 @@ class CFIPAutomation:
     def get_ip_list(self):
         """获取IP列表"""
         try:
-            # 查找IP列表区域
-            ip_list_elements = self.driver.find_elements(By.XPATH, "//div[contains(@class, 'ip-list') or contains(@id, 'ip') or contains(@class, 'result')]")
+            # 根据实际HTML结构，使用id选择器
+            ip_list_element = self.driver.find_element(By.ID, "ip-list")
             
-            if not ip_list_elements:
-                print("未找到IP列表区域")
-                return []
-            
-            ip_list_text = ip_list_elements[0].text
+            ip_list_text = ip_list_element.text
             print(f"IP列表原始文本: {ip_list_text[:200]}...")
+            
+            # 检查是否还是提示文本
+            if '请选择端口和IP库' in ip_list_text:
+                print("IP列表尚未加载")
+                return []
             
             # 按行分割并提取IP
             lines = ip_list_text.split('\n')
