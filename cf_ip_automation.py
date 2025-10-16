@@ -141,8 +141,12 @@ class CFIPAutomation:
         
         print("等待测试完成...")
         
+        # 先等待350秒让测试充分进行
+        print("测试需要时间，先等待350秒...")
+        time.sleep(350)
+        print("350秒等待完成，开始检查测试结果...")
         
-        max_wait_time = 600  # 再等待最多5分钟
+        max_wait_time = 300  # 再等待最多5分钟
         check_interval = 30  # 每30秒检查一次
         elapsed_time = 0
         
