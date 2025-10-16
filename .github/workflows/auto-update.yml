@@ -67,6 +67,11 @@ jobs:
         echo "开始执行CloudFlare IP优选测试..."
         python cf_ip_automation.py
         
+    - name: Run backup IP collection
+      run: |
+        echo "执行备用IP收集..."
+        python collect_ips.py
+        
     - name: Check results
       run: |
         if [ -f "ip.txt" ]; then
