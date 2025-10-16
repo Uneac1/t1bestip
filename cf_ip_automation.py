@@ -134,15 +134,20 @@ class CFIPAutomation:
             return False
     
     def wait_for_test_completion(self):
-        """等待测试完成，每10秒检查一次"""
+        """等待测试完成，先等待350秒，然后每30秒检查一次"""
         if not self.driver:
             print("本地环境，跳过测试等待")
             return True
         
         print("等待测试完成...")
         
-        max_wait_time = 600  # 最大等待10分钟
-        check_interval = 10  # 每10秒检查一次
+        # 先等待350秒让测试充分进行
+        print("测试需要时间，先等待350秒...")
+        time.sleep(350)
+        print("350秒等待完成，开始检查测试结果...")
+        
+        max_wait_time = 300  # 再等待最多5分钟
+        check_interval = 30  # 每30秒检查一次
         elapsed_time = 0
         
         while elapsed_time < max_wait_time:
@@ -155,7 +160,7 @@ class CFIPAutomation:
                 
                 # 检查是否还在加载中
                 if '正在加载IP列表，请稍候' in ip_text or '请选择端口和IP库' in ip_text:
-                    print(f"测试进行中... 已等待 {elapsed_time} 秒")
+                    print(f"测试仍在进行中... 已检查 {elapsed_time} 秒")
                     time.sleep(check_interval)
                     elapsed_time += check_interval
                     continue
@@ -165,7 +170,7 @@ class CFIPAutomation:
                     print("IP列表已加载完成！")
                     return True
                 
-                print(f"等待IP列表加载... 已等待 {elapsed_time} 秒")
+                print(f"等待IP列表加载... 已检查 {elapsed_time} 秒")
                 time.sleep(check_interval)
                 elapsed_time += check_interval
                 
