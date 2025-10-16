@@ -147,22 +147,11 @@ class CFIPAutomation:
         
         while elapsed_time < max_wait_time:
             try:
-                # 检查测试进度
-                progress_elements = self.driver.find_elements(By.XPATH, "//*[contains(text(), '测试进度')]")
-                for element in progress_elements:
-                    progress_text = element.text
-                    print(f"当前测试进度: {progress_text}")
-                    
-                    # 检查是否显示完成状态
-                    if '完成' in progress_text and '有效IP:' in progress_text:
-                        print("测试已完成！")
-                        return True
-                
                 # 检查IP列表内容
                 ip_list_element = self.driver.find_element(By.ID, "ip-list")
                 ip_text = ip_list_element.text
                 
-                print(f"当前IP列表内容: {ip_text[:100]}...")
+                print(f"当前IP列表内容: {ip_text[:200]}...")
                 
                 # 检查是否还在加载中
                 if '正在加载IP列表，请稍候' in ip_text or '请选择端口和IP库' in ip_text:
@@ -171,14 +160,12 @@ class CFIPAutomation:
                     elapsed_time += check_interval
                     continue
                 
-                # 检查是否有实际的IP内容
-                if ip_text and len(ip_text.strip()) > 0 and '.' in ip_text:
-                    print("IP列表已加载，等待测试完成状态...")
-                    time.sleep(check_interval)
-                    elapsed_time += check_interval
-                    continue
+                # 检查是否有实际的IP内容（包含端口和延迟信息）
+                if ip_text and len(ip_text.strip()) > 0 and (':' in ip_text or 'ms' in ip_text):
+                    print("IP列表已加载完成！")
+                    return True
                 
-                print(f"等待测试完成... 已等待 {elapsed_time} 秒")
+                print(f"等待IP列表加载... 已等待 {elapsed_time} 秒")
                 time.sleep(check_interval)
                 elapsed_time += check_interval
                 
@@ -239,12 +226,25 @@ class CFIPAutomation:
     def get_progress_info(self):
         """获取测试进度"""
         try:
-            # 查找测试进度区域
-            progress_elements = self.driver.find_elements(By.XPATH, "//*[contains(text(), '测试进度')]")
-            if progress_elements:
-                progress_text = progress_elements[0].text.strip()
-                print(f"获取到的测试进度: {progress_text}")
-                return progress_text
+            # 查找测试进度区域，尝试多种选择器
+            selectors = [
+                "//*[contains(text(), '测试进度')]",
+                "//*[contains(text(), '完成')]",
+                "//*[contains(text(), '有效IP')]",
+                "//div[contains(@class, 'stats')]//*[contains(text(), '测试')]"
+            ]
+            
+            for selector in selectors:
+                try:
+                    progress_elements = self.driver.find_elements(By.XPATH, selector)
+                    if progress_elements:
+                        progress_text = progress_elements[0].text.strip()
+                        if progress_text and len(progress_text) > 5:  # 确保不是空文本
+                            print(f"获取到的测试进度: {progress_text}")
+                            return progress_text
+                except:
+                    continue
+            
             return "测试进度获取失败"
         except Exception as e:
             print(f"获取测试进度失败: {e}")
