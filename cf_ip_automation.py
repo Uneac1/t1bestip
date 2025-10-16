@@ -15,7 +15,10 @@ class CFIPAutomation:
     
     def setup_driver(self):
         """设置Chrome浏览器驱动"""
+        print(f"当前环境: GITHUB_ACTIONS={os.getenv('GITHUB_ACTIONS')}")
+        
         if os.getenv('GITHUB_ACTIONS'):
+            print("检测到GitHub Actions环境，初始化Chrome...")
             chrome_options = Options()
             chrome_options.add_argument('--headless')
             chrome_options.add_argument('--no-sandbox')
@@ -24,9 +27,14 @@ class CFIPAutomation:
             chrome_options.add_argument('--window-size=1920,1080')
             chrome_options.add_argument('--user-agent=Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.7390.107 Safari/537.36')
             
-            self.driver = webdriver.Chrome(options=chrome_options)
-            self.wait = WebDriverWait(self.driver, 20)
-            print("Chrome浏览器驱动初始化成功")
+            try:
+                self.driver = webdriver.Chrome(options=chrome_options)
+                self.wait = WebDriverWait(self.driver, 20)
+                print("Chrome浏览器驱动初始化成功")
+            except Exception as e:
+                print(f"Chrome初始化失败: {e}")
+                self.driver = None
+                self.wait = None
         else:
             self.driver = None
             self.wait = None
@@ -231,32 +239,15 @@ class CFIPAutomation:
             ip_list_element = self.driver.find_element(By.ID, "ip-list")
             
             ip_list_text = ip_list_element.text
-            print(f"IP列表原始文本: {ip_list_text[:200]}...")
+            print(f"IP列表原始文本: {ip_list_text}")
             
             # 检查是否还是提示文本
             if '请选择端口和IP库' in ip_list_text:
                 print("IP列表尚未加载")
                 return []
             
-            # 按行分割并提取IP
-            lines = ip_list_text.split('\n')
-            results = []
-            
-            for line in lines:
-                line = line.strip()
-                if line and '.' in line:
-                    # 提取IP地址（去除延迟信息）
-                    parts = line.split()
-                    for part in parts:
-                        if '.' in part and len(part.split('.')) == 4:
-                            # 验证IP格式
-                            ip_parts = part.split('.')
-                            if len(ip_parts) == 4 and all(p.isdigit() and 0 <= int(p) <= 255 for p in ip_parts):
-                                if part not in results:
-                                    results.append(part)
-                                    break
-            
-            return results
+            # 直接返回原始文本，不做任何处理
+            return [ip_list_text]
             
         except Exception as e:
             print(f"获取IP列表失败: {e}")
@@ -274,10 +265,11 @@ class CFIPAutomation:
             f.write(f"# 测试进度: {results.get('progress', '获取失败')}\n")
             f.write(f"# {'='*50}\n")
             
-            for ip in results.get('ips', []):
-                f.write(f"{ip}\n")
+            # 直接保存网站原始输出，不做任何处理
+            ip_text = results.get('ips', [''])[0]
+            f.write(ip_text)
         
-        print(f"结果已保存到 ip.txt 文件，共 {len(results.get('ips', []))} 个IP")
+        print(f"结果已保存到 ip.txt 文件")
         return True
     
     def run_automation(self):
