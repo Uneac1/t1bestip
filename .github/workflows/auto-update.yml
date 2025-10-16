@@ -9,6 +9,8 @@ jobs:
   update-cf-ips:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions:
+      contents: write
     
     steps:
     - uses: actions/checkout@v4
@@ -66,11 +68,7 @@ jobs:
       run: |
         echo "开始执行CloudFlare IP优选测试..."
         python cf_ip_automation.py
-        
-    - name: Run backup IP collection
-      run: |
-        echo "执行备用IP收集..."
-        python collect_ips.py
+        echo "CF IP automation 执行完成，退出码: $?"
         
     - name: Check results
       run: |
