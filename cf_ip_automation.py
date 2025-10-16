@@ -23,6 +23,7 @@ class CFIPAutomation:
             chrome_options.add_argument('--disable-dev-shm-usage')
             chrome_options.add_argument('--disable-gpu')
             chrome_options.add_argument('--window-size=1920,1080')
+            chrome_options.add_argument('--user-agent=Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.7390.107 Safari/537.36')
             
             self.driver = webdriver.Chrome(options=chrome_options)
             self.wait = WebDriverWait(self.driver, 20)
