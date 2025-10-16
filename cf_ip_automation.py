@@ -141,7 +141,7 @@ class CFIPAutomation:
         
         print("等待测试完成...")
         
-        max_wait_time = 300  # 最大等待5分钟
+        max_wait_time = 600  # 最大等待10分钟
         check_interval = 10  # 每10秒检查一次
         elapsed_time = 0
         
@@ -150,20 +150,35 @@ class CFIPAutomation:
                 # 检查测试进度
                 progress_elements = self.driver.find_elements(By.XPATH, "//*[contains(text(), '测试进度')]")
                 for element in progress_elements:
-                    text = element.text
-                    if '完成' in text:
-                        print("测试已完成")
+                    progress_text = element.text
+                    print(f"当前测试进度: {progress_text}")
+                    
+                    # 检查是否显示完成状态
+                    if '完成' in progress_text and '有效IP:' in progress_text:
+                        print("测试已完成！")
                         return True
                 
-                # 检查IP列表是否已加载
-                ip_list_elements = self.driver.find_elements(By.XPATH, "//div[contains(@class, 'ip-list') or contains(@id, 'ip')]")
-                if ip_list_elements:
-                    ip_text = ip_list_elements[0].text
-                    if ip_text and '请选择端口和IP库' not in ip_text and len(ip_text.strip()) > 0:
-                        print("IP列表已加载")
-                        return True
+                # 检查IP列表内容
+                ip_list_element = self.driver.find_element(By.ID, "ip-list")
+                ip_text = ip_list_element.text
                 
-                print(f"测试进行中... 已等待 {elapsed_time} 秒")
+                print(f"当前IP列表内容: {ip_text[:100]}...")
+                
+                # 检查是否还在加载中
+                if '正在加载IP列表，请稍候' in ip_text or '请选择端口和IP库' in ip_text:
+                    print(f"测试进行中... 已等待 {elapsed_time} 秒")
+                    time.sleep(check_interval)
+                    elapsed_time += check_interval
+                    continue
+                
+                # 检查是否有实际的IP内容
+                if ip_text and len(ip_text.strip()) > 0 and '.' in ip_text:
+                    print("IP列表已加载，等待测试完成状态...")
+                    time.sleep(check_interval)
+                    elapsed_time += check_interval
+                    continue
+                
+                print(f"等待测试完成... 已等待 {elapsed_time} 秒")
                 time.sleep(check_interval)
                 elapsed_time += check_interval
                 
@@ -225,11 +240,14 @@ class CFIPAutomation:
         """获取测试进度"""
         try:
             # 查找测试进度区域
-            progress_elements = self.driver.find_elements(By.XPATH, "//*[contains(text(), '测试进度') or contains(text(), '完成')]")
+            progress_elements = self.driver.find_elements(By.XPATH, "//*[contains(text(), '测试进度')]")
             if progress_elements:
-                return progress_elements[0].text.strip()
+                progress_text = progress_elements[0].text.strip()
+                print(f"获取到的测试进度: {progress_text}")
+                return progress_text
             return "测试进度获取失败"
-        except:
+        except Exception as e:
+            print(f"获取测试进度失败: {e}")
             return "测试进度获取失败"
     
     def get_ip_list(self):
@@ -260,7 +278,10 @@ class CFIPAutomation:
             return False
         
         with open('ip.txt', 'a', encoding='utf-8') as f:
-            f.write(f"\n# CF官方列表优选IP - {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
+            # 使用UTC时间
+            import datetime
+            utc_time = datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')
+            f.write(f"\n# CF官方列表优选IP - {utc_time}\n")
             f.write(f"# 统计信息: {results.get('stats', '获取失败')}\n")
             f.write(f"# 测试进度: {results.get('progress', '获取失败')}\n")
             f.write(f"# {'='*50}\n")
