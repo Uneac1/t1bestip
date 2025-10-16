@@ -5,7 +5,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
-from selenium.common.exceptions import TimeoutException
+from selenium.common.exceptions import TimeoutException, NoSuchElementException
 
 class CFIPAutomation:
     def __init__(self):
@@ -15,7 +15,6 @@ class CFIPAutomation:
     
     def setup_driver(self):
         """设置Chrome浏览器驱动"""
-        # 检查是否在GitHub Actions环境中
         if os.getenv('GITHUB_ACTIONS'):
             chrome_options = Options()
             chrome_options.add_argument('--headless')
@@ -29,7 +28,6 @@ class CFIPAutomation:
             self.wait = WebDriverWait(self.driver, 20)
             print("Chrome浏览器驱动初始化成功")
         else:
-            # 本地环境，跳过Chrome初始化
             self.driver = None
             self.wait = None
             print("本地环境，跳过Chrome初始化")
@@ -47,58 +45,70 @@ class CFIPAutomation:
         return True
     
     def select_cf_official(self):
-        """选择CF官方列表"""
+        """检查CF官方列表是否已选中"""
         if not self.driver:
-            print("本地环境，跳过CF官方列表选择")
+            print("本地环境，跳过CF官方列表检查")
             return True
         
-        print("正在选择CF官方列表...")
+        print("正在检查CF官方列表选择...")
         
-        # 尝试多种选择器
-        selectors = [
-            "//label[contains(text(), 'CF官方列表')]/input",
-            "//input[@value='CF官方列表']",
-            "//label[contains(text(), 'CF官方列表')]"
-        ]
-        
-        for selector in selectors:
-            try:
-                element = self.wait.until(EC.element_to_be_clickable((By.XPATH, selector)))
-                element.click()
+        try:
+            # 查找IP库输入框，检查当前值
+            ip_input = self.driver.find_element(By.XPATH, "//input[contains(@placeholder, 'IP库') or contains(@class, 'ip-library')]")
+            current_value = ip_input.get_attribute('value')
+            
+            if 'CF官方列表' in current_value:
+                print("CF官方列表已选中")
+                return True
+            else:
+                print(f"当前IP库选择: {current_value}")
+                # 如果未选中，尝试点击下拉框选择
+                dropdown_arrow = self.driver.find_element(By.XPATH, "//div[contains(@class, 'dropdown') or contains(@class, 'select')]//button[contains(@class, 'arrow') or contains(@class, 'chevron')]")
+                dropdown_arrow.click()
+                time.sleep(1)
+                
+                # 选择CF官方列表
+                cf_option = self.driver.find_element(By.XPATH, "//option[contains(text(), 'CF官方列表')]")
+                cf_option.click()
                 print("已选择CF官方列表")
                 return True
-            except:
-                continue
-        
-        print("未找到CF官方列表选项")
-        return False
+                
+        except Exception as e:
+            print(f"CF官方列表检查失败: {e}")
+            return False
     
     def select_port_443(self):
         """选择443端口"""
         if not self.driver:
-            print("本地环境，跳过443端口选择")
+            print("本地环境，跳过端口选择")
             return True
         
         print("正在选择443端口...")
         
-        # 尝试多种选择器
-        selectors = [
-            "//label[contains(text(), '443')]/input",
-            "//input[@value='443']",
-            "//label[contains(text(), '443')]"
-        ]
-        
-        for selector in selectors:
-            try:
-                element = self.wait.until(EC.element_to_be_clickable((By.XPATH, selector)))
-                element.click()
+        try:
+            # 查找端口输入框
+            port_input = self.driver.find_element(By.XPATH, "//input[contains(@placeholder, '端口') or contains(@class, 'port')]")
+            current_value = port_input.get_attribute('value')
+            
+            if '443' in current_value:
+                print("443端口已选中")
+                return True
+            else:
+                print(f"当前端口选择: {current_value}")
+                # 点击端口下拉框
+                port_dropdown = self.driver.find_element(By.XPATH, "//div[contains(@class, 'dropdown') or contains(@class, 'select')]//button[contains(@class, 'arrow') or contains(@class, 'chevron')]")
+                port_dropdown.click()
+                time.sleep(1)
+                
+                # 选择443端口
+                port_443 = self.driver.find_element(By.XPATH, "//option[contains(text(), '443')]")
+                port_443.click()
                 print("已选择443端口")
                 return True
-            except:
-                continue
-        
-        print("未找到443端口选项")
-        return False
+                
+        except Exception as e:
+            print(f"443端口选择失败: {e}")
+            return False
     
     def start_test(self):
         """开始延迟测试"""
@@ -108,58 +118,57 @@ class CFIPAutomation:
         
         print("正在开始延迟测试...")
         
-        button_selectors = [
-            "//button[contains(text(), '开始延迟测试')]",
-            "//input[@value='开始延迟测试']"
-        ]
-        
-        for selector in button_selectors:
-            try:
-                button = self.wait.until(EC.element_to_be_clickable((By.XPATH, selector)))
-                button.click()
-                print("延迟测试已开始")
-                return True
-            except:
-                continue
-        
-        print("未找到开始测试按钮")
-        return False
+        try:
+            # 查找开始测试按钮
+            start_button = self.driver.find_element(By.XPATH, "//button[contains(text(), '开始延迟测试')]")
+            start_button.click()
+            print("延迟测试已开始")
+            return True
+            
+        except Exception as e:
+            print(f"开始测试失败: {e}")
+            return False
     
     def wait_for_test_completion(self):
-        """等待测试完成"""
+        """等待测试完成，每10秒检查一次"""
         if not self.driver:
             print("本地环境，跳过测试等待")
             return True
         
         print("等待测试完成...")
-        time.sleep(60)  # 等待60秒
-        print("测试等待完成")
-        return True
-    
-    def append_save_ips(self):
-        """追加保存优选IP"""
-        if not self.driver:
-            print("本地环境，跳过追加保存")
-            return True
         
-        print("正在追加保存优选IP...")
+        max_wait_time = 300  # 最大等待5分钟
+        check_interval = 10  # 每10秒检查一次
+        elapsed_time = 0
         
-        button_selectors = [
-            "//button[contains(text(), '追加保存优选IP')]",
-            "//input[@value='追加保存优选IP']"
-        ]
-        
-        for selector in button_selectors:
+        while elapsed_time < max_wait_time:
             try:
-                button = self.wait.until(EC.element_to_be_clickable((By.XPATH, selector)))
-                button.click()
-                print("追加保存操作已执行")
-                time.sleep(3)
-                return True
-            except:
-                continue
+                # 检查测试进度
+                progress_elements = self.driver.find_elements(By.XPATH, "//*[contains(text(), '测试进度')]")
+                for element in progress_elements:
+                    text = element.text
+                    if '完成' in text:
+                        print("测试已完成")
+                        return True
+                
+                # 检查IP列表是否已加载
+                ip_list_elements = self.driver.find_elements(By.XPATH, "//div[contains(@class, 'ip-list') or contains(@id, 'ip')]")
+                if ip_list_elements:
+                    ip_text = ip_list_elements[0].text
+                    if ip_text and '请选择端口和IP库' not in ip_text and len(ip_text.strip()) > 0:
+                        print("IP列表已加载")
+                        return True
+                
+                print(f"测试进行中... 已等待 {elapsed_time} 秒")
+                time.sleep(check_interval)
+                elapsed_time += check_interval
+                
+            except Exception as e:
+                print(f"检查测试状态时出错: {e}")
+                time.sleep(check_interval)
+                elapsed_time += check_interval
         
-        print("未找到追加保存按钮")
+        print("测试等待超时")
         return False
     
     def get_test_results(self):
@@ -169,9 +178,6 @@ class CFIPAutomation:
             return None
         
         print("正在获取测试结果...")
-        
-        # 等待结果加载
-        time.sleep(5)
         
         try:
             # 获取统计信息
@@ -187,7 +193,6 @@ class CFIPAutomation:
                 print("获取IP列表失败")
                 return None
             
-            # 组合所有信息
             results = {
                 'stats': stats_info,
                 'progress': progress_info,
@@ -205,8 +210,10 @@ class CFIPAutomation:
         """获取统计信息"""
         try:
             # 查找统计信息区域
-            stats_element = self.driver.find_element(By.XPATH, "//div[contains(@class, 'stats') or contains(text(), '统计信息') or contains(text(), '获取到的IP总数')]")
-            return stats_element.text.strip()
+            stats_elements = self.driver.find_elements(By.XPATH, "//*[contains(text(), '统计信息') or contains(text(), '获取到的IP总数') or contains(text(), '您的国家')]")
+            if stats_elements:
+                return stats_elements[0].text.strip()
+            return "统计信息获取失败"
         except:
             return "统计信息获取失败"
     
@@ -214,8 +221,10 @@ class CFIPAutomation:
         """获取测试进度"""
         try:
             # 查找测试进度区域
-            progress_element = self.driver.find_element(By.XPATH, "//div[contains(@class, 'progress') or contains(text(), '测试进度') or contains(text(), '完成')]")
-            return progress_element.text.strip()
+            progress_elements = self.driver.find_elements(By.XPATH, "//*[contains(text(), '测试进度') or contains(text(), '完成')]")
+            if progress_elements:
+                return progress_elements[0].text.strip()
+            return "测试进度获取失败"
         except:
             return "测试进度获取失败"
     
@@ -223,10 +232,14 @@ class CFIPAutomation:
         """获取IP列表"""
         try:
             # 查找IP列表区域
-            ip_list_element = self.driver.find_element(By.XPATH, "//div[contains(@class, 'ip-list') or contains(@class, 'result') or contains(@id, 'ip') or contains(@id, 'result')]")
+            ip_list_elements = self.driver.find_elements(By.XPATH, "//div[contains(@class, 'ip-list') or contains(@id, 'ip') or contains(@class, 'result')]")
             
-            # 获取整个IP列表的文本
-            ip_list_text = ip_list_element.text
+            if not ip_list_elements:
+                print("未找到IP列表区域")
+                return []
+            
+            ip_list_text = ip_list_elements[0].text
+            print(f"IP列表原始文本: {ip_list_text[:200]}...")
             
             # 按行分割并提取IP
             lines = ip_list_text.split('\n')
@@ -276,34 +289,36 @@ class CFIPAutomation:
             print("开始CloudFlare IP优选自动化流程...")
             
             # 1. 打开网站
-            self.open_website()
+            if not self.open_website():
+                return False
             
-            # 2. 选择CF官方列表
-            self.select_cf_official()
+            # 2. 检查CF官方列表
+            if not self.select_cf_official():
+                return False
             
             # 3. 选择443端口
-            self.select_port_443()
+            if not self.select_port_443():
+                return False
             
             # 4. 开始测试
-            self.start_test()
+            if not self.start_test():
+                return False
             
             # 5. 等待测试完成
-            self.wait_for_test_completion()
-            
-            # 6. 追加保存
-            self.append_save_ips()
-            
-            # 7. 获取结果
-            results = self.get_test_results()
-            
-            # 8. 保存到文件
-            if results:
-                self.save_results_to_file(results)
-                print("自动化流程完成")
-                return True
-            else:
-                print("获取测试结果失败，自动化流程失败")
+            if not self.wait_for_test_completion():
                 return False
+            
+            # 6. 获取结果
+            results = self.get_test_results()
+            if not results:
+                return False
+            
+            # 7. 保存到文件
+            if not self.save_results_to_file(results):
+                return False
+            
+            print("自动化流程完成")
+            return True
             
         except Exception as e:
             print(f"自动化流程执行出错: {e}")
