@@ -1,4 +1,4 @@
-# CloudFlare IP优选自动化工具
+# CloudFlare IP优选自动化工具（废置）
 
 这是一个用于自动获取CloudFlare优选IP的工具。它通过GitHub Actions定时访问在线优选IP网站，执行测试并保存结果。
 
